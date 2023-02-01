@@ -1,0 +1,7 @@
+---
+# handlers file for coffeesprout.nftables
+#
+- name: reload nftables
+  service:
+    name: "{{ nft_service_name }}"
+    state: reloaded

@@ -1,0 +1,60 @@
+---
+# defaults file for coffeesprout.nftables
+#
+#
+
+# Default set of packages to install nftables
+nft_packages:
+- nftables
+
+# Default service name of nftables
+nft_service_name: "nftables.service"
+
+#Default nftables configuration file
+nft_config_file: "/etc/nftables.conf"
+
+# Default NFT configuration template file
+nft_main_template: "nftables.conf.j2"
+
+# TODO: Add support for more complex rulesets
+nft_extra_templates: []
+
+# Define the localnetwork (for example for ignoring or SNAT)
+nft_localnet: "10.0.0.0/8"
+
+# Enable loading NAT rules; Default False
+nft_enable_gateway: False
+
+# In case of NAT this specifies the "outgoing" network connection through wich the traffic leaves the local network
+nft_ext_if: "{{ ansible_default_ipv4.interface }}"
+
+# 
+nft_ip_pub: "{{ ansible_default_ipv4.address }}"
+
+# Default drop all inbound traffic except when allowed with nft_tcp_pass_in or nft_udp_pass_in
+nft_inbound_policy: drop
+
+# Default drop all outbound traffic except when allowed with nft_tcp_pass_out or nft_udp_pass_out
+nft_outbound_policy: accept
+
+# Specify inbound TCP traffic allowed
+nft_tcp_pass_in:
+- "{{ sshd_port | default('22') }}"
+
+# Specify outbound TCP traffic allowed
+nft_tcp_pass_out:
+- 22
+- 80
+- 443
+
+# Specify inbound UDP traffic allowed
+nft_udp_pass_in:
+- 53
+- 123
+- 443
+
+# Specify outbound UDP traffic allowed
+nft_udp_pass_out:
+- 53
+- 123
+- 443

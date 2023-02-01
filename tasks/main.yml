@@ -1,0 +1,21 @@
+---
+# tasks file for coffeesprout.nftables
+
+- name: ensure packages
+  package:
+    name: "{{ nft_packages }}"
+    state: present
+
+- name: ensure configuration
+  template:
+    src: "{{  nft_main_template }}"
+    dest: "{{ nft_config_file }}"
+  notify: reload nftables
+
+- name: enable and start nftables
+  service:
+      name: "{{ nft_service_name }}"
+      state: started
+      enabled: True
+
+

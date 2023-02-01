@@ -1,0 +1,65 @@
+#!/usr/sbin/nft -f
+
+# drop any existing nftables ruleset
+flush ruleset
+
+{% if nft_localnet is defined %}
+define localnet = {{ nft_localnet }} 
+{% endif %}
+
+{% if nft_enable_gateway %}
+table ip nat {
+  chain prerouting {
+    type nat hook prerouting priority 0; policy accept;
+  }
+
+  chain postrouting {
+     type nat hook postrouting priority 100; policy accept;
+     oifname "{{ nft_ext_if }}" snat to {{ nft_ip_pub }}
+  }
+}
+{% endif %}
+
+table inet filter {
+
+  chain input {
+    # By default, {{ nft_inbound_policy }} all traffic unless it meets a filter
+    # criteria specified by the rules that follow below.
+    type filter hook input priority 0; policy {{ nft_inbound_policy }};
+    #Allow traffic from established and related packets
+    ct state vmap { established : accept, related : accept, invalid : drop }
+    # Accept loopback
+    iifname lo accept
+    #Allow ICMP echo
+    icmp type echo-request limit rate 5/second accept
+    # Allow ICMPv6 to work
+    icmpv6 type { nd-neighbor-solicit, nd-router-advert, nd-neighbor-advert } accept
+    icmpv6 type echo-request limit rate 5/second accept
+
+{% for rule in nft_tcp_pass_in %}
+    tcp dport {{ rule }} ct state new accept
+{% endfor %}
+
+{% for rule in nft_udp_pass_in %}
+    udp dport {{ rule }} accept
+{% endfor %}
+    log prefix "[nftables] Inbound Denied: " counter drop
+  }
+
+  chain forward {
+    # Disable forwarding traffic by default
+    type filter hook forward priority 0; policy drop;
+  }
+
+  chain output {
+    type filter hook output priority filter; policy {{ nft_outbound_policy }};
+    ct state established,related accept
+{% for rule in nft_tcp_pass_out %}
+     tcp dport {{ rule }} ct state new accept
+{% endfor %}
+{% for rule in nft_udp_pass_out %}
+     udp dport {{ rule }} accept
+{% endfor %}
+     log prefix "[nftables] Outbound Denied: " counter drop
+  }
+}

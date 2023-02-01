@@ -1,0 +1,20 @@
+galaxy_info:
+  author: Barry van Someren
+  description: Install simple NFTAbles configuration
+  company: CoffeeSprout ICT Services
+
+  license: BSD
+
+  min_ansible_version: 2.7
+
+  platforms:
+  - name: Debian
+    versions: bullseye
+
+  galaxy_tags:
+  - debian
+  - nftables
+  - nft
+  - firewall
+
+dependencies: []
