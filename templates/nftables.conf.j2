@@ -48,7 +48,17 @@ table inet filter {
 
   chain forward {
     # Disable forwarding traffic by default
-    type filter hook forward priority 0; policy drop;
+    type filter hook forward priority 0; policy accept;
+{% if nft_enable_gateway %}
+    ct state established,related accept
+{% for rule in nft_fwd_tcp_pass_out %}
+       tcp dport {{ rule }} ct state new accept
+{% endfor %}
+{% for rule in nft_fwd_udp_pass_out %}
+       udp dport {{ rule }} accept
+{% endfor %}
+    log prefix "[nftables] NAT denied: " counter drop
+{% endif %}
   }
 
   chain output {

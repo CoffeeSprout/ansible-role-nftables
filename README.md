@@ -63,6 +63,19 @@ Specify outbound UDP traffic allowed
         - 123
         - 443
 
+Specify outbound NAT/FWD TCP traffic allowed
+
+        nft_fwd_tcp_pass_out:
+        - 22
+        - 80
+        - 443
+
+Specify outbound NAT/FWD UDP traffic allowed
+
+        nft_fwd_udp_pass_out:
+        - 53
+        - 123
+        - 443
 
 Example Playbook
 ----------------
