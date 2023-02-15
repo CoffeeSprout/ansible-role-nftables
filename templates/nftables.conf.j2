@@ -36,13 +36,13 @@ table inet filter {
     icmpv6 type { nd-neighbor-solicit, nd-router-advert, nd-neighbor-advert } accept
     icmpv6 type echo-request limit rate 5/second accept
 
-{% for rule in nft_tcp_pass_in %}
-    tcp dport {{ rule }} ct state new accept
-{% endfor %}
+{% if nft_tcp_pass_in is defined and nft_tcp_pass_in|length %}
+    tcp dport { {{ nft_tcp_pass_in|join(', ') }} }  ct state new accept
+{% endif %}
 
-{% for rule in nft_udp_pass_in %}
-    udp dport {{ rule }} accept
-{% endfor %}
+{% if nft_udp_pass_in is defined and nft_udp_pass_in|length %}
+    udp dport { {{ nft_udp_pass_in|join(', ') }} } accept
+{% endif %}
     log prefix "[nftables] Inbound Denied: " counter drop
   }
 
@@ -51,12 +51,12 @@ table inet filter {
     type filter hook forward priority 0; policy accept;
 {% if nft_enable_gateway %}
     ct state established,related accept
-{% for rule in nft_fwd_tcp_pass_out %}
-       tcp dport {{ rule }} ct state new accept
-{% endfor %}
-{% for rule in nft_fwd_udp_pass_out %}
-       udp dport {{ rule }} accept
-{% endfor %}
+{% if nft_fwd_tcp_pass_out is defined and nft_fwd_tcp_pass_out|length %}
+       tcp dport { {{ nft_fwd_tcp_pass_out|join(', ') }} } ct state new accept
+{% endif %}
+{% if nft_fwd_udp_pass_out is defined and nft_fwd_udp_pass_out|length %}
+       udp dport { {{ nft_fwd_udp_pass_out|join(', ') }} } accept
+{% endif %}
     log prefix "[nftables] NAT denied: " counter drop
 {% endif %}
   }
@@ -64,12 +64,12 @@ table inet filter {
   chain output {
     type filter hook output priority filter; policy {{ nft_outbound_policy }};
     ct state established,related accept
-{% for rule in nft_tcp_pass_out %}
-     tcp dport {{ rule }} ct state new accept
-{% endfor %}
-{% for rule in nft_udp_pass_out %}
-     udp dport {{ rule }} accept
-{% endfor %}
+{% if nft_tcp_pass_out is defined and nft_tcp_pass_out|length %}
+     tcp dport { {{ nft_tcp_pass_out|join(', ') }} } ct state new accept
+{% endif %}
+{% if nft_udp_pass_out is defined and nft_udp_pass_out|length %}
+     udp dport { {{ nft_udp_pass_out|join(', ') }} } accept
+{% endif %}
      log prefix "[nftables] Outbound Denied: " counter drop
   }
 }
