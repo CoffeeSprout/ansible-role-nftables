@@ -19,6 +19,27 @@ nft_main_template: "nftables.conf.j2"
 # TODO: Add support for more complex rulesets
 nft_extra_templates: []
 
+nft_interfaces:
+- name: INET_DEV 
+  iif: "{{ nft_ext_if }}"
+  tcp_in: "{{ nft_tcp_pass_in }}"
+  tcp_out: "{{ nft_tcp_pass_out }}"
+  udp_in: "{{ nft_udp_pass_in }}"
+  udp_out: "{{ nft_udp_pass_out }}"
+  additional_rules: []
+- name: LOOPBACK
+  iif: "lo"
+
+
+nft_networks:
+- name: "localnet"
+  iif: "{{ nft_internal_network }}"
+  addresses: "{{ nft_localnet }}"
+  forward: "{{ nft_enable_gateway }}"
+  tcp_out: "{{ nft_fwd_tcp_pass_out }}"
+  udp_out: "{{ nft_fwd_udp_pass_out }}"
+  
+
 # Define the localnetwork (for example for ignoring or SNAT)
 nft_localnet: "10.0.0.0/8"
 
@@ -34,8 +55,11 @@ nft_ip_pub: "{{ ansible_default_ipv4.address }}"
 # Default drop all inbound traffic except when allowed with nft_tcp_pass_in or nft_udp_pass_in
 nft_inbound_policy: drop
 
+# Default drop all forwarding traffic except when allowed with nft_fwd_*_pass
+nft_forward_policy: drop
+
 # Default drop all outbound traffic except when allowed with nft_tcp_pass_out or nft_udp_pass_out
-nft_outbound_policy: accept
+nft_outbound_policy: drop
 
 # Specify inbound TCP traffic allowed
 nft_tcp_pass_in:

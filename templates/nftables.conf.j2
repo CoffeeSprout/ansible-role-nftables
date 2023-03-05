@@ -35,41 +35,52 @@ table inet filter {
     # Allow ICMPv6 to work
     icmpv6 type { nd-neighbor-solicit, nd-router-advert, nd-neighbor-advert } accept
     icmpv6 type echo-request limit rate 5/second accept
-
-{% if nft_tcp_pass_in is defined and nft_tcp_pass_in|length %}
-    tcp dport { {{ nft_tcp_pass_in|join(', ') }} }  ct state new accept
+{% for iif in nft_interfaces %}
+{% if iif.tcp_in is defined and iif.tcp_in|length %}
+    iifname {{ iif.iif }} tcp dport { {{ iif.tcp_in|join(', ') }} }  ct state new accept
 {% endif %}
 
-{% if nft_udp_pass_in is defined and nft_udp_pass_in|length %}
-    udp dport { {{ nft_udp_pass_in|join(', ') }} } accept
+{% if iif.udp_in is defined and iif.udp_in|length %}
+    iifname {{ iif.iif }} udp dport { {{ iif.udp_in|join(', ') }} } accept
 {% endif %}
+{% endfor %}
     log prefix "[nftables] Inbound Denied: " counter drop
   }
 
   chain forward {
     # Disable forwarding traffic by default
-    type filter hook forward priority 0; policy accept;
+    type filter hook forward priority 0; policy {{ nft_forward_policy }};
 {% if nft_enable_gateway %}
-    ct state established,related accept
-{% if nft_fwd_tcp_pass_out is defined and nft_fwd_tcp_pass_out|length %}
-       tcp dport { {{ nft_fwd_tcp_pass_out|join(', ') }} } ct state new accept
+    #Allow traffic from established and related packets
+    ct state vmap { established : accept, related : accept, invalid : drop }
+{% for network in nft_networks %}
+{% if network.tcp_out is defined and network.tcp_out|length %}
+  iifname {{ network.iif }} ip saddr {{ network.addresses }} tcp dport { {{ network.tcp_out|join(', ') }} } ct state new accept
 {% endif %}
-{% if nft_fwd_udp_pass_out is defined and nft_fwd_udp_pass_out|length %}
-       udp dport { {{ nft_fwd_udp_pass_out|join(', ') }} } accept
+{% if network.udp_out is defined and network.udp_out|length %}
+  iifname {{ network.iif }} ip saddr {{ network.addresses }} udp dport { {{ network.udp_out|join(', ') }} } accept
 {% endif %}
+{% endfor %}
+
     log prefix "[nftables] NAT denied: " counter drop
 {% endif %}
   }
 
   chain output {
     type filter hook output priority filter; policy {{ nft_outbound_policy }};
-    ct state established,related accept
-{% if nft_tcp_pass_out is defined and nft_tcp_pass_out|length %}
-     tcp dport { {{ nft_tcp_pass_out|join(', ') }} } ct state new accept
+    #Allow traffic from established and related packets
+    ct state vmap { established : accept, related : accept, invalid : drop }
+    # Accept loopback
+    oifname lo accept
+
+{% for oif in nft_interfaces %}
+{% if oif.tcp_out is defined and oif.tcp_out|length %}
+     oifname {{ oif.iif }} tcp dport { {{ oif.tcp_out|join(', ') }} } ct state new accept
 {% endif %}
-{% if nft_udp_pass_out is defined and nft_udp_pass_out|length %}
-     udp dport { {{ nft_udp_pass_out|join(', ') }} } accept
+{% if oif.udp_out is defined and oif.udp_out|length %}
+     oifname {{ oif.iif }} udp dport { {{ oif.udp_out|join(', ') }} } accept
 {% endif %}
+{% endfor %}
      log prefix "[nftables] Outbound Denied: " counter drop
   }
 }
