@@ -1,0 +1,21 @@
+---
+- hosts: debian-lab
+  remote_user: coffeesprout
+  become: True
+  roles:
+  - role: coffeesprout.nftables
+    nft_enable_gateway: True
+    nft_internal_network: ens19
+    nft_tcp_pass_in:
+    - 22
+    - 443
+    nft_fwd_tcp_pass_out:
+    - 22
+    - 80
+    - 443
+    - 5201
+    nft_fwd_udp_pass_out:
+    - 53
+    - 123
+    - 443
+    - 5201 
